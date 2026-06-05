@@ -1,0 +1,106 @@
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+  <title>License Plate OCR Demo</title>
+
+  <!-- Load Tesseract.js -->
+
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+
+  <!-- Load OpenCV.js -->
+
+  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+
+</head>
+
+<body>
+
+  <h2>Automatic License Plate Recognition</h2>
+
+  <video id="video" width="320" height="240" autoplay></video>
+
+  <p id="output">Waiting for plates...</p>
+
+
+
+  <script>
+
+    // Start camera stream
+
+    navigator.mediaDevices.getUserMedia({ video: true })
+
+      .then(stream => {
+
+        document.getElementById('video').srcObject = stream;
+
+        // Capture a frame every 3 seconds
+
+        setInterval(captureFrame, 3000);
+
+      });
+
+
+
+    async function captureFrame() {
+
+      const video = document.getElementById('video');
+
+      const canvas = document.createElement('canvas');
+
+      canvas.width = video.videoWidth;
+
+      canvas.height = video.videoHeight;
+
+      const ctx = canvas.getContext('2d');
+
+      ctx.drawImage(video, 0, 0);
+
+
+
+      // Convert to OpenCV Mat
+
+      let src = cv.imread(canvas);
+
+      let gray = new cv.Mat();
+
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);   // grayscale
+
+      cv.threshold(gray, gray, 120, 255, cv.THRESH_BINARY); // thresholding
+
+
+
+      // Put back into canvas for OCR
+
+      cv.imshow(canvas, gray);
+
+      src.delete(); gray.delete();
+
+
+
+      // Run OCR
+
+      const { data: { text } } = await Tesseract.recognize(canvas, 'eng', {
+
+        tessedit_char_whitelist: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+
+      });
+
+
+
+      const timestamp = new Date().toLocaleTimeString();
+
+      document.getElementById('output').innerText += 
+
+        `\n${timestamp}: ${text.trim()}`;
+
+    }
+
+  </script>
+
+</body>
+
+</html>
